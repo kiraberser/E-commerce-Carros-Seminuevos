@@ -1,3 +1,4 @@
+from django.conf import settings
 from rest_framework import generics, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -16,8 +17,8 @@ def _set_refresh_cookie(response: Response, refresh_token: str) -> None:
         key=REFRESH_COOKIE_NAME,
         value=refresh_token,
         httponly=True,
-        samesite='Lax',
-        secure=False,   # Set True in production (requires HTTPS)
+        samesite=getattr(settings, 'REFRESH_TOKEN_COOKIE_SAMESITE', 'Lax'),
+        secure=getattr(settings, 'REFRESH_TOKEN_COOKIE_SECURE', False),
         max_age=REFRESH_COOKIE_MAX_AGE,
         path='/api/auth/',
     )
