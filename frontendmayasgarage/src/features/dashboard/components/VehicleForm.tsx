@@ -77,18 +77,34 @@ export function VehicleForm({ vehicle, onSuccess, onCancel }: VehicleFormProps) 
     }
   }
 
+  async function uploadToCloudinary(files: File[]): Promise<string[]> {
+    const urls: string[] = [];
+    for (const file of files) {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('/api/upload', { method: 'POST', body: fd });
+      if (!res.ok) throw new Error('Error al subir imagen');
+      const data = await res.json() as { url: string };
+      urls.push(data.url);
+    }
+    return urls;
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
     try {
+      // Upload images to Cloudinary first, then send URLs to backend
+      const imageUrls = images.length > 0 ? await uploadToCloudinary(images) : [];
+
       const fd = new FormData();
       (Object.keys(form) as (keyof FormState)[]).forEach((key) => {
         const val = form[key];
         if (val !== '') fd.append(key, String(val));
       });
-      images.forEach((img) => fd.append('images', img));
+      imageUrls.forEach((url) => fd.append('image_urls', url));
 
       if (isEdit) {
         await vehiclesApi.update(vehicle.id, fd);

@@ -4,22 +4,12 @@ from .models import Vehicle, VehicleImage
 
 
 class VehicleImageSerializer(serializers.ModelSerializer):
-    image = serializers.SerializerMethodField()
-
     class Meta:
         model = VehicleImage
         fields = ('id', 'image', 'is_primary', 'order')
 
-    def get_image(self, obj):
-        if not obj.image:
-            return None
-        request = self.context.get('request')
-        url = obj.image.url
-        return request.build_absolute_uri(url) if request else url
-
 
 class VehicleListSerializer(serializers.ModelSerializer):
-    """Compact serializer for list views."""
     primary_image = serializers.SerializerMethodField()
 
     class Meta:
@@ -33,14 +23,10 @@ class VehicleListSerializer(serializers.ModelSerializer):
 
     def get_primary_image(self, obj):
         img = obj.images.filter(is_primary=True).first() or obj.images.first()
-        if img:
-            request = self.context.get('request')
-            return request.build_absolute_uri(img.image.url) if request else img.image.url
-        return None
+        return img.image if img else None
 
 
 class VehicleDetailSerializer(serializers.ModelSerializer):
-    """Full serializer for detail views."""
     images = VehicleImageSerializer(many=True, read_only=True)
     reserved_by_name = serializers.SerializerMethodField()
 
@@ -61,7 +47,7 @@ class VehicleDetailSerializer(serializers.ModelSerializer):
 
 
 class VehicleWriteSerializer(serializers.ModelSerializer):
-    """Serializer for create/update — handles image upload."""
+    """Serializer for create/update — accepts Cloudinary image URLs."""
 
     class Meta:
         model = Vehicle
@@ -87,11 +73,13 @@ class VehicleWriteSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         if not request:
             return
-        images = request.FILES.getlist('images')
-        for idx, img_file in enumerate(images):
-            VehicleImage.objects.create(
-                vehicle=vehicle,
-                image=img_file,
-                is_primary=(idx == 0),
-                order=idx,
-            )
+        # Accept a list of Cloudinary URLs sent as image_urls[]
+        urls = request.data.getlist('image_urls')
+        for idx, url in enumerate(urls):
+            if url:
+                VehicleImage.objects.create(
+                    vehicle=vehicle,
+                    image=url,
+                    is_primary=(idx == 0),
+                    order=idx,
+                )

@@ -101,9 +101,6 @@ class VehicleImageDestroyView(generics.DestroyAPIView):
     permission_classes = [IsAdminUser]
 
     def perform_destroy(self, instance):
-        # Delete the file from disk before removing the DB record
-        if instance.image:
-            instance.image.delete(save=False)
         instance.delete()
 
 
