@@ -10,7 +10,13 @@ load_dotenv(BASE_DIR / '.env')
 
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-fallback-key')
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+
+_allowed = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+# Always allow Railway internal healthcheck + any *.railway.app domain
+ALLOWED_HOSTS = [h.strip() for h in _allowed if h.strip()] + [
+    '.railway.app',
+    '.up.railway.app',
+]
 
 # Application definition
 INSTALLED_APPS = [
